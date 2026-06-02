@@ -1,0 +1,11 @@
+# Skip files that don't need to be uploaded to Vercel
+node_modules
+supabase
+.env
+.env.local
+.env.production
+.vscode
+.git
+.github
+*.md
+bun.lockb
