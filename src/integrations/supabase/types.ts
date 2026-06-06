@@ -55,7 +55,7 @@ export type Database = {
       cases: {
         Row: {
           created_at: string | null
-          created_by: string | null
+          created_by: string
           description: string | null
           id: string
           status: string | null
@@ -63,7 +63,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          created_by?: string | null
+          created_by: string
           description?: string | null
           id?: string
           status?: string | null
@@ -71,7 +71,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
-          created_by?: string | null
+          created_by?: string
           description?: string | null
           id?: string
           status?: string | null
