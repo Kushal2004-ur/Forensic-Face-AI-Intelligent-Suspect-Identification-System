@@ -7,6 +7,98 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const EMBEDDING_DIMENSIONS = 768;
+
+type EmbeddingResult = {
+  embedding: number[];
+  modelName: string;
+};
+
+const validateEmbedding = (rawEmbedding: unknown, source: string): number[] => {
+  if (!Array.isArray(rawEmbedding)) {
+    throw new Error(`Invalid embedding returned from ${source}`);
+  }
+
+  const embedding = rawEmbedding.map((val: unknown) => {
+    const num = Number(val);
+    if (Number.isNaN(num)) {
+      throw new Error(`Invalid embedding value from ${source}: ${val}`);
+    }
+    return num;
+  });
+
+  if (embedding.length !== EMBEDDING_DIMENSIONS) {
+    throw new Error(`Invalid embedding dimensions from ${source}: ${embedding.length}`);
+  }
+
+  const sumAbs = embedding.reduce((sum, val) => sum + Math.abs(val), 0);
+  if (sumAbs === 0) {
+    throw new Error(`Generated embedding from ${source} is invalid (all zeros)`);
+  }
+
+  return embedding;
+};
+
+const generateTextEmbedding = async (text: string, lovableApiKey: string): Promise<EmbeddingResult> => {
+  const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+
+  if (geminiApiKey) {
+    for (const apiVersion of ['v1', 'v1beta']) {
+      console.log(`Calling Gemini embedding API with model: text-embedding-004 (${apiVersion})`);
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/${apiVersion}/models/text-embedding-004:embedContent?key=${geminiApiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: { parts: [{ text }] },
+            taskType: 'SEMANTIC_SIMILARITY',
+            outputDimensionality: EMBEDDING_DIMENSIONS
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          embedding: validateEmbedding(data.embedding?.values, `Gemini text-embedding-004 ${apiVersion}`),
+          modelName: `gemini-text-embedding-004-${apiVersion}`
+        };
+      }
+
+      const errorText = await response.text();
+      console.error(`Gemini text-embedding-004 ${apiVersion} error:`, response.status, errorText);
+    }
+  }
+
+  console.log('Falling back to Lovable AI Gateway embedding model: google/gemini-embedding-001');
+  const gatewayResponse = await fetch('https://ai.gateway.lovable.dev/v1/embeddings', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${lovableApiKey}`,
+      'Lovable-API-Key': lovableApiKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'google/gemini-embedding-001',
+      input: text,
+      dimensions: EMBEDDING_DIMENSIONS
+    }),
+  });
+
+  if (!gatewayResponse.ok) {
+    const errorText = await gatewayResponse.text();
+    console.error('Lovable AI Gateway embedding error:', gatewayResponse.status, errorText);
+    throw new Error(`Failed to generate embedding: ${errorText}`);
+  }
+
+  const gatewayData = await gatewayResponse.json();
+  return {
+    embedding: validateEmbedding(gatewayData.data?.[0]?.embedding, 'Lovable AI Gateway google/gemini-embedding-001'),
+    modelName: 'google/gemini-embedding-001'
+  };
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
