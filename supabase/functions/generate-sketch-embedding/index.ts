@@ -119,6 +119,7 @@ serve(async (req) => {
 
     let imageUrl = image_url;
     let targetMediaId = media_id;
+    let existingMeta: Record<string, unknown> = {};
 
     // If media_id provided, fetch the media record to get image
     if (media_id) {
@@ -134,6 +135,7 @@ serve(async (req) => {
       }
 
       console.log('Media URL from database:', mediaData.url);
+      existingMeta = mediaData.meta || {};
 
       // Download the image from storage and convert to base64
       const { data: fileData, error: downloadError } = await supabase
@@ -232,7 +234,7 @@ serve(async (req) => {
       .update({ 
         embedding,
         meta: {
-          ...(mediaData?.meta || {}),
+          ...existingMeta,
           ai_status: 'ready_for_ai_matching',
           embedding_model: modelName,
           embedding_generated_at: new Date().toISOString()
