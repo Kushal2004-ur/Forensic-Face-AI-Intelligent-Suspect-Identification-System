@@ -124,7 +124,7 @@ serve(async (req) => {
     if (media_id) {
       const { data: mediaData, error: mediaError } = await supabase
         .from('media')
-        .select('url, type, case_id')
+        .select('url, type, case_id, meta')
         .eq('id', media_id)
         .single();
 
