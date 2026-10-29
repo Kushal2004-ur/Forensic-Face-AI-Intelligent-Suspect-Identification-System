@@ -68,11 +68,7 @@ const NewSuspectDialog = ({ open, onOpenChange, onSuspectCreated }: NewSuspectDi
       if (suspectData.photo_url) {
         try {
           await supabase.functions.invoke('generate-suspect-embedding', {
-            body: {
-              suspectId: suspectData.id,
-              photoUrl: suspectData.photo_url,
-              description: `${values.name} - ${values.notes || 'No additional description'}`
-            }
+            body: { suspectId: suspectData.id }
           });
           console.log('Embedding generated for suspect:', suspectData.id);
         } catch (embeddingError) {
