@@ -355,6 +355,12 @@ Contributions are welcome! Please follow these steps:
 
 ---
 
+## 📄 Demo Prompt
+
+She has a heart-shaped face with a broad forehead and narrow chin, large brown almond-shaped eyes, and full lips. Her black hair is straight with a center parting, and she has a small mole above her left upper lip
+
+---
+
 ## 👥 Team Members
 
 | # | Name | USN | Role |
@@ -376,6 +382,7 @@ Distributed under the MIT License. See `LICENSE` for more information.
 **Project Link:** https://github.com/Kushal2004-ur/cue-face-ai
 
 ---
+
 
 <div align="center">
 
