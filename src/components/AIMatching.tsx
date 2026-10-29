@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
-import { Loader2, Search, Users, Brain, Target, GitCompare } from 'lucide-react';
+import { Loader2, Search, Users, Brain, Target, GitCompare, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ComparisonModal } from './ComparisonModal';
@@ -24,6 +24,7 @@ interface SketchMatch {
 
 const AIMatching = ({ caseId }: AIMatchingProps) => {
   const [isSearching, setIsSearching] = useState(false);
+  const [isRebuilding, setIsRebuilding] = useState(false);
   const [matches, setMatches] = useState<SketchMatch[]>([]);
   const [threshold, setThreshold] = useState([0.7]);
   const [selectedSketch, setSelectedSketch] = useState<string | null>(null);
@@ -96,6 +97,28 @@ const AIMatching = ({ caseId }: AIMatchingProps) => {
       });
     } finally {
       setIsSearching(false);
+    }
+  };
+
+  const rebuildSuspectFingerprints = async () => {
+    setIsRebuilding(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-suspect-embedding', { body: { all: true } });
+      if (error) throw new Error(error.message);
+      if (!data?.success) throw new Error(data?.error || 'Rebuild failed');
+      const skipped = (data.skipped || []).map((s: { name: string }) => s.name);
+      toast({
+        title: 'Suspect database refreshed',
+        description: `Updated ${data.updated?.length || 0} suspects.` + (skipped.length ? ` Skipped (no photo): ${skipped.join(', ')}` : ''),
+      });
+    } catch (error) {
+      toast({
+        title: 'Refresh failed',
+        description: error instanceof Error ? error.message : 'Could not refresh suspect database',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRebuilding(false);
     }
   };
 
@@ -224,6 +247,19 @@ const AIMatching = ({ caseId }: AIMatchingProps) => {
                 Run AI Suspect Matching
               </>
             )}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={rebuildSuspectFingerprints}
+            disabled={isRebuilding}
+            className="w-full"
+          >
+            {isRebuilding ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-2 h-4 w-4" />
+            )}
+            {isRebuilding ? 'Refreshing suspect database...' : 'Refresh Suspect Database'}
           </Button>
         </CardContent>
       </Card>
