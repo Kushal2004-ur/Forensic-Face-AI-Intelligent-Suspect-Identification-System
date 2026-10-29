@@ -87,47 +87,7 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    const visionResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Lovable-API-Key': LOVABLE_API_KEY,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: 'Analyze this forensic sketch or suspect photo in extreme detail. Describe all facial features, characteristics, distinctive marks, expressions, age, gender, hair, eyes, nose, mouth, face shape, skin tone, and any other identifying features. Be comprehensive and precise for forensic matching purposes.'
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: imageUrl
-                }
-              }
-            ]
-          }
-        ]
-      }),
-    });
-
-    if (!visionResponse.ok) {
-      const errorText = await visionResponse.text();
-      console.error('Vision API error:', visionResponse.status, errorText);
-      throw new Error('Failed to analyze image with vision model');
-    }
-
-    const visionData = await visionResponse.json();
-    const imageDescription = visionData.choices?.[0]?.message?.content;
-
-    if (!imageDescription) {
-      throw new Error('No description returned from vision model');
-    }
+    const imageDescription = await describeFace(imageUrl, LOVABLE_API_KEY);
 
     console.log('Image description generated, length:', imageDescription.length);
     console.log('Description preview:', imageDescription.substring(0, 200));
